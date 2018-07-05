@@ -4,8 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math
 
-reward_dist_mean = [0.2, -0.8, 1.5, 0.4, 1.2, -1.5, -0.2, -1.0, 0.8, -0.5]
-reward_dist_dev = 1.0
+
 
 class Action:
     def __init__(self, name, reward_mean, reward_dev):
@@ -21,40 +20,42 @@ class Action:
         self.estimated_reward = self.total_reward_received / self.total_times_selected
 
 
-def select_action(actions):
+def select_action(actions, exploration):
     if random.random() < exploration:
         return random.choice(actions)
     else:
         r = max(actions, key=lambda x: x.estimated_reward)
         return random.choice([j for j in actions if j.estimated_reward == r.estimated_reward])
     
-RUNS = 1000
-STEPS = 1000
-steps = [0.0]*STEPS
-run = 0
-results = np.zeros((RUNS,STEPS))
-while run < RUNS:
-    available_actions = [Action(i, reward_dist_mean[i], reward_dist_dev) for i in range(10)]
-    total_reward = 0.0
-    step = 0
-    exploration = 0.1
-    while step < STEPS:
-        a = select_action(available_actions)
-        r = a.reward_func()
-        a.update_reward_estimation(r)
-        total_reward += r
-        avg_reward = total_reward / (step + 1)
-        results[run, step] = avg_reward
-        step += 1
-        exploration -= 0.0001
 
-    run += 1
+def simulate(num_runs, num_steps):
+    # Initial settings for available actions
+    reward_dist_mean = [0.2, -0.8, 1.5, 0.4, 1.2, -1.5, -0.2, -1.0, 0.8, -0.5]
+    reward_dist_dev = 1.0
 
-#for i,j in enumerate(steps):
-#    steps[i] = j / RUNS
+    # Simulation status intialization
+    run = 0
+    avg_reward_per_step = np.zeros((num_runs, num_steps))
 
+    while run < num_runs:
+        available_actions = [Action(i, reward_dist_mean[i], reward_dist_dev) for i in range(10)]
+        total_reward = 0.0
+        step = 0
+        exploration = 0.1
+        while step < num_steps:
+            a = select_action(available_actions, exploration)
+            r = a.reward_func()
+            a.update_reward_estimation(r)
+            total_reward += r
+            avg_reward = total_reward / (step + 1)
+            avg_reward_per_step[run, step] = avg_reward
+            step += 1
+            exploration -= 0.0001 # decaying willing to explore
 
+        run += 1
 
-plt.plot(np.mean(results, axis=0))
-plt.show()
+    plt.plot(np.mean(avg_reward_per_step, axis=0))
+    plt.show()
 
+if __name__ == "__main__":
+    simulate(1000, 1000)
